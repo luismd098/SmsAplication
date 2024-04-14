@@ -6,16 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.home.HomeFragment">
 
-    <Button
-        android:id="@+id/btnStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Status"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/swEnvioMensajes" />
-
     <Switch
         android:id="@+id/swEnvioMensajes"
         android:layout_width="wrap_content"
@@ -25,4 +15,5 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

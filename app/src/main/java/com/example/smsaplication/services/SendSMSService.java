@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -13,8 +12,10 @@ import androidx.annotation.Nullable;
 import com.example.smsaplication.config.Settings;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.connection.ServerCallback;
+import com.example.smsaplication.utilities.Log;
 import com.example.smsaplication.utilities.SmsActions;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -25,6 +26,7 @@ public class SendSMSService extends Service {
     private Runnable runnable;
     private Connection connection;
     private SmsActions smsActions;
+    private boolean stopService = false;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -48,24 +50,43 @@ public class SendSMSService extends Service {
                 connection.getSMS(Settings.GET_SMS_URL, new ServerCallback() {
                     @Override
                     public void onSuccess(JSONObject result) {
-                        result.keys().forEachRemaining(key -> {
-                            try {
-                                Object value = result.get(key);
-                            } catch (JSONException e) {
-                                com.example.smsaplication.utilities.Log.LocalLog(context,e.hashCode(),e.getMessage());
+                        try {
+                            int status = result.getInt("status");
+                            String msg = result.getString("msg");
+
+                            if(status != 0 ){
+                                throw new Exception(msg);
                             }
-                        });
-//                        smsActions.sendSMS("PRUEBA SERVICE","4521902181");
+
+                            JSONArray data = result.getJSONArray("data");
+                            for (int i = 0; i < data.length(); i++) {
+                                JSONObject object = data.getJSONObject(i);
+                                int id = object.getInt("Id");
+                                String numeroDestino = object.getString("NumeroDestino");
+                                String mensaje = object.getString("Mensaje");
+                                new SmsActions(context)
+                                        .sendSMS(id,mensaje,numeroDestino);
+                            }
+
+                        } catch (JSONException e){
+                            com.example.smsaplication.utilities.Log.LocalLog(context,e.hashCode(),e.getMessage());
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     }
+
 
                     @Override
                     public void onReject(String error) {
                         // TODO
-                        com.example.smsaplication.utilities.Log.SendLog(context,-1,error);
+                        Log.LocalLog(context,-1,error);
                     }
                 });
             } catch (Exception e) {
-                com.example.smsaplication.utilities.Log.LocalLog(context,e.hashCode(),e.getMessage());
+                Log.LocalLog(context,e.hashCode(),e.getMessage());
+            }
+            if(stopService){
+                return;
             }
             handler.postDelayed(runnable,10000);
         };
@@ -88,6 +109,8 @@ public class SendSMSService extends Service {
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+        stopService = true;
         Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
     }
 

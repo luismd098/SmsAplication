@@ -1,21 +1,29 @@
 package com.example.smsaplication;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.Switch;
+import android.widget.Toast;
 
 import com.example.smsaplication.config.Settings;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.connection.ServerCallback;
 import com.example.smsaplication.services.SendSMSService;
 import com.example.smsaplication.utilities.Log;
+import com.example.smsaplication.utilities.SmsActions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -23,12 +31,18 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.example.smsaplication.databinding.ActivityMainBinding;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.List;
+import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
+    private static final int SEND_SMS_REQUEST_CODE = 100;
+    private Switch swEnvioMensajes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,47 +60,15 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_activity_main);
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(binding.navView, navController);
-        // Iniciar servicio SendSMS
-//        startService(new Intent(this, SendSMSService.class));
-
+        // Revisar el status del servicio de envio de mensajes
         boolean statusSendSMS = isRunning(SendSMSService.class);
-        Switch swEnvioMensajes = findViewById(R.id.swEnvioMensajes);
+
+        swEnvioMensajes = findViewById(R.id.swEnvioMensajes);
+
         swEnvioMensajes.setChecked(statusSendSMS);
 
-        final Context context = this;
+        checkPermission(Manifest.permission.SEND_SMS,SEND_SMS_REQUEST_CODE);
 
-        final Button btn = findViewById(R.id.btnStatus);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                try {
-                    new Connection(view.getContext()).getSMS(Settings.GET_SMS_URL, new ServerCallback() {
-                        @Override
-                        public void onSuccess(JSONObject result) {
-                            System.out.println(result);
-    //                        result.keys().forEachRemaining(key -> {
-    //                            try {
-    //                                Object value = result.get(key);
-    //                            } catch (JSONException e) {
-    //                                com.example.smsaplication.utilities.Log.LocalLog(e.hashCode(),e.getMessage());
-    //                            }
-    //                        });
-    //                        smsActions.sendSMS("PRUEBA SERVICE","4521902181");
-                        }
-
-                        @Override
-                        public void onReject(String error) {
-                            System.out.println(error);
-                            // TODO
-                            System.out.println(Log.LocalLog(context,-1,error));
-    //                        com.example.smsaplication.utilities.Log.SendLog(context,-1,error);
-                        }
-                    });
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
     }
 
     @SuppressWarnings("deprecation")
@@ -98,6 +80,48 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         return false;
+    }
+
+    private void startSendSMSService(){
+        boolean statusSendSMS = isRunning(SendSMSService.class);
+        if(!statusSendSMS)
+            startService(new Intent(MainActivity.this, SendSMSService.class));
+
+        swEnvioMensajes.setChecked(true);
+    }
+
+
+    // Function to check and request permission
+    public void checkPermission(String permission, int requestCode)
+    {
+        // Checking if permission is not granted
+        if (ContextCompat.checkSelfPermission(MainActivity.this, permission) == PackageManager.PERMISSION_DENIED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[] { permission }, requestCode);
+        }
+        // Iniciar con el servicio de envio de mensajes
+        else {
+            startSendSMSService();
+        }
+
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults)
+    {
+        super.onRequestPermissionsResult(requestCode,
+                permissions,
+                grantResults);
+
+        if (requestCode == SEND_SMS_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startSendSMSService();
+            }
+            else {
+                Toast.makeText(MainActivity.this, "Permiso para enviar mensajes denegado", Toast.LENGTH_SHORT) .show();
+            }
+        }
     }
 
 }

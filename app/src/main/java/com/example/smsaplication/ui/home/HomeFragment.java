@@ -15,22 +15,27 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.smsaplication.MainActivity;
+import com.example.smsaplication.R;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.databinding.FragmentHomeBinding;
 import com.example.smsaplication.services.SendSMSService;
+import com.example.smsaplication.utilities.Log;
 
 public class HomeFragment extends Fragment {
 
     private FragmentHomeBinding binding;
 
     private Connection connection;
-    private Button btnStatus;
+    private Switch swEnvioMensajes;
     private Context context;
 
 
@@ -45,25 +50,30 @@ public class HomeFragment extends Fragment {
         ////
         context = getContext();
 
-        btnStatus = binding.btnStatus;
-        btnStatus.setOnClickListener(new View.OnClickListener() {
+        swEnvioMensajes = binding.swEnvioMensajes;
+        swEnvioMensajes.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onClick(View view) {
-                boolean status = isRunning(SendSMSService.class);
-//                Toast.makeText(getContext(), aux, Toast.LENGTH_SHORT).show();
-//                Intent intent = new Intent(context,MyReceiver.class);
-//                Intent intent2 = new Intent(context,MyReceiver.class);
-//                intent2.putExtra("DELIVERED",1);
-//                PendingIntent sentIntent = PendingIntent.getBroadcast(context,0, intent,PendingIntent.FLAG_MUTABLE);
-//                PendingIntent deliveryIntent = PendingIntent.getBroadcast(context,0, intent2,PendingIntent.FLAG_MUTABLE);
-//
-//                SmsManager smsManager = SmsManager.getDefault();
-//                smsManager.sendTextMessage("4521902181",null,"Prueba",sentIntent,deliveryIntent);
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if(!isChecked)
+                    stopSendSMSService();
+                else
+                    startSendSMSService();
             }
         });
 
-
         return root;
+    }
+
+    private void startSendSMSService(){
+        boolean statusSendSMS = isRunning(SendSMSService.class);
+        if(!statusSendSMS)
+            context.startService(new Intent(context, SendSMSService.class));
+
+        swEnvioMensajes.setChecked(true);
+    }
+
+    private void stopSendSMSService(){
+        context.stopService(new Intent(context, SendSMSService.class));
     }
 
 

@@ -59,6 +59,19 @@ public class Log {
         return newRowId;
     }
 
+    public static boolean DeleteLogs(final Context context){
+        try{
+            SQLiteHelper sqLiteHelper = new SQLiteHelper(context);
+            SQLiteDatabase db = sqLiteHelper.getWritableDatabase();
+            int result = db.delete(LogTableContract.LogEntry.TABLE_NAME,null,null);
+            return result > 0;
+        } catch ( Exception e) {
+            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+        return false;
+
+    }
+
     public static List GetLogs(final Context context){
         SQLiteHelper sqLiteHelper = new SQLiteHelper(context);
         SQLiteDatabase db = sqLiteHelper.getReadableDatabase();
