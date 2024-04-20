@@ -1,14 +1,20 @@
 package com.example.smsaplication.services;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 
+import com.example.smsaplication.R;
 import com.example.smsaplication.config.Settings;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.connection.ServerCallback;
@@ -23,9 +29,13 @@ import java.util.Iterator;
 
 public class SendSMSService extends Service {
 
+    private static final int NOTIFICATION_ID = 1;
+    private static final String CHANNEL_ID = "my_channel";
+
     private Runnable runnable;
     private Connection connection;
     private SmsActions smsActions;
+    private Handler handler;
     private boolean stopService = false;
     @Nullable
     @Override
@@ -43,7 +53,7 @@ public class SendSMSService extends Service {
         // separate thread because the service normally runs in the process's
         // main thread, which we don't want to block. We also make it
         // background priority so CPU-intensive work doesn't disrupt our UI.
-        Handler handler = new Handler();
+        handler = new Handler();
         final Context context = this;
         runnable = () -> {
             try {
@@ -88,17 +98,18 @@ public class SendSMSService extends Service {
             if(stopService){
                 return;
             }
-            handler.postDelayed(runnable,10000);
+            handler.postDelayed(runnable,15000);
         };
 
-        handler.postDelayed(runnable,10000);
+        handler.postDelayed(runnable,15000);
 
         // Get the HandlerThread's Looper and use it for our Handler
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "ejecuntando servicio", Toast.LENGTH_SHORT).show();
+        startForegroundService();
 
         // For each start request, send a message to start a job and deliver the
         // start ID so we know which request we're stopping when we finish the job
@@ -111,8 +122,27 @@ public class SendSMSService extends Service {
     public void onDestroy() {
         super.onDestroy();
         stopService = true;
-        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
+        handler.removeCallbacks(runnable);
+        Toast.makeText(this, "servicio finalizado", Toast.LENGTH_SHORT).show();
     }
 
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID,
+                    "My Channel",
+                    NotificationManager.IMPORTANCE_DEFAULT);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            manager.createNotificationChannel(channel);
+        }
+    }
+    private void startForegroundService() {
+        createNotificationChannel();
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Enviando mensajes")
+                .setContentText("Servicio de envio de mensajes activo")
+                .setSmallIcon(R.mipmap.ic_sms)
+                .build();
+        startForeground(NOTIFICATION_ID, notification);
+    }
 
 }

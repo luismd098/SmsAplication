@@ -35,7 +35,7 @@ public class SmsActions {
      * */
     public void sendSMS(final int id,final String message,final String phoneNumber)
     {
-        SmsManager sms = SmsManager.getDefault();
+        SmsManager sms =  context.getSystemService(SmsManager.class);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_SENT), PendingIntent.FLAG_IMMUTABLE);
         PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_DELIVERED), PendingIntent.FLAG_IMMUTABLE);
@@ -56,10 +56,12 @@ public class SmsActions {
                 processDeliverAction(getResultCode(),id);
                 context.unregisterReceiver(this);
             }
+
+
         }, new IntentFilter(Params.SMS_ACTION_DELIVERED));
 
         try{
-            sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI);
+            sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI, id);
         }catch(Exception e){
             e.printStackTrace();
         }
@@ -104,7 +106,7 @@ public class SmsActions {
                                                 String msg = result.getString("msg");
 
                                                 if(status != 0 ){
-                                                    throw new Exception(msg);
+                                                    Log.LocalLog(context,status,"Ocurrio un problema al confirmar el sms: " + msg);
                                                 }
 
                                                 Log.LocalLog(context,1,"Mensaje con ID " + smsId + " entregado correctamente.");
