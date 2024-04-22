@@ -13,10 +13,14 @@ import com.example.smsaplication.config.Settings;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.connection.ServerCallback;
 import com.example.smsaplication.modules.MyReceiver;
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.base.Splitter;
+import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.collect.Iterables;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 
 public class SmsActions {
@@ -35,11 +39,9 @@ public class SmsActions {
      * */
     public void sendSMS(final int id,final String message,final String phoneNumber)
     {
-        SmsManager sms =  context.getSystemService(SmsManager.class);
 
         PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_SENT), PendingIntent.FLAG_IMMUTABLE);
         PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_DELIVERED), PendingIntent.FLAG_IMMUTABLE);
-
         context.registerReceiver(new BroadcastReceiver(){
             @Override
             public void onReceive(Context arg0, Intent arg1)
@@ -56,13 +58,35 @@ public class SmsActions {
                 processDeliverAction(getResultCode(),id);
                 context.unregisterReceiver(this);
             }
-
-
         }, new IntentFilter(Params.SMS_ACTION_DELIVERED));
 
-        try{
-            sms.sendTextMessage(phoneNumber, null, message, sentPI, deliveredPI, id);
-        }catch(Exception e){
+        try {
+            SmsManager sms = SmsManager.getDefault();
+            String[] strArray =
+                    Iterables.toArray(
+                            Splitter
+                                    .fixedLength(60)
+                                    .split(message),
+                            String.class
+                    );
+            ArrayList<String> mSMSMessage = new ArrayList<>();
+
+            Collections.addAll(mSMSMessage, strArray);
+
+            for (int i = 0, l = mSMSMessage.size() - 1; i < mSMSMessage.size(); i++) {
+                if(i == l) {
+                    sms.sendTextMessage(phoneNumber, null, mSMSMessage.get(i), sentPI
+                            , deliveredPI);
+                }else{
+                    sms.sendTextMessage(phoneNumber, null, mSMSMessage.get(i), null
+                            , null);
+                }
+
+            }
+
+
+        } catch (Exception e) {
+            Log.SendLog(context,e.hashCode(),e.getMessage());
             e.printStackTrace();
         }
     }

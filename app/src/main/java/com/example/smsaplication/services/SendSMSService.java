@@ -98,10 +98,10 @@ public class SendSMSService extends Service {
             if(stopService){
                 return;
             }
-            handler.postDelayed(runnable,15000);
+            handler.postDelayed(runnable,12000);
         };
 
-        handler.postDelayed(runnable,15000);
+        handler.postDelayed(runnable,12000);
 
         // Get the HandlerThread's Looper and use it for our Handler
     }
