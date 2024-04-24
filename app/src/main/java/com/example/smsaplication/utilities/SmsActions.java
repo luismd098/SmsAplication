@@ -42,6 +42,9 @@ public class SmsActions {
 
         PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_SENT), PendingIntent.FLAG_IMMUTABLE);
         PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_DELIVERED), PendingIntent.FLAG_IMMUTABLE);
+
+
+
         context.registerReceiver(new BroadcastReceiver(){
             @Override
             public void onReceive(Context arg0, Intent arg1)
@@ -50,6 +53,7 @@ public class SmsActions {
                 context.unregisterReceiver(this);
             }
         }, new IntentFilter(Params.SMS_ACTION_SENT));
+
 
         context.registerReceiver(new BroadcastReceiver(){
             @Override
@@ -60,35 +64,27 @@ public class SmsActions {
             }
         }, new IntentFilter(Params.SMS_ACTION_DELIVERED));
 
+
         try {
             SmsManager sms = SmsManager.getDefault();
-            String[] strArray =
-                    Iterables.toArray(
-                            Splitter
-                                    .fixedLength(60)
-                                    .split(message),
-                            String.class
-                    );
-            ArrayList<String> mSMSMessage = new ArrayList<>();
 
-            Collections.addAll(mSMSMessage, strArray);
+            ArrayList<PendingIntent> sentPendingIntents = new ArrayList<PendingIntent>();
+            ArrayList<PendingIntent> deliveredPendingIntents = new ArrayList<PendingIntent>();
 
-            for (int i = 0, l = mSMSMessage.size() - 1; i < mSMSMessage.size(); i++) {
-                if(i == l) {
-                    sms.sendTextMessage(phoneNumber, null, mSMSMessage.get(i), sentPI
-                            , deliveredPI);
-                }else{
-                    sms.sendTextMessage(phoneNumber, null, mSMSMessage.get(i), null
-                            , null);
-                }
+            ArrayList<String> mSMSMessage = sms.divideMessage(message);
+            for (int i = 0; i < mSMSMessage.size(); i++) {
+                sentPendingIntents.add(i, sentPI);
 
+                deliveredPendingIntents.add(i, deliveredPI);
             }
-
+            sms.sendMultipartTextMessage(phoneNumber, null, mSMSMessage,
+                    sentPendingIntents, deliveredPendingIntents);
 
         } catch (Exception e) {
             Log.SendLog(context,e.hashCode(),e.getMessage());
             e.printStackTrace();
         }
+
     }
 
     private void processSentAction(int status, int smsId){
@@ -108,6 +104,17 @@ public class SmsActions {
                 break;
             case SmsManager.RESULT_ERROR_RADIO_OFF:
                 Log.SendLog(context,status," Error al enviar el mensaje con ID: " + smsId + ".(Radio off) (RESULT_ERROR_RADIO_OFF)");
+                break;
+            default:
+                Log.SendLog(context,status," Error al enviar el mensaje con ID: " + smsId + ".(Unknown) (ERROR DESCONOCIDO)");
+                break;
+        }
+    }
+
+    private void processSentActionToken(int status, int smsId){
+        switch (status)
+        {
+            case Activity.RESULT_OK:
                 break;
             default:
                 Log.SendLog(context,status," Error al enviar el mensaje con ID: " + smsId + ".(Unknown) (ERROR DESCONOCIDO)");
