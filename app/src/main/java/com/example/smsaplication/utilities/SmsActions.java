@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 
@@ -13,8 +14,6 @@ import com.example.smsaplication.config.Settings;
 import com.example.smsaplication.connection.Connection;
 import com.example.smsaplication.connection.ServerCallback;
 import com.example.smsaplication.modules.MyReceiver;
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.base.Splitter;
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.collect.Iterables;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,7 +43,6 @@ public class SmsActions {
         PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(Params.SMS_ACTION_DELIVERED), PendingIntent.FLAG_IMMUTABLE);
 
 
-
         context.registerReceiver(new BroadcastReceiver(){
             @Override
             public void onReceive(Context arg0, Intent arg1)
@@ -52,7 +50,7 @@ public class SmsActions {
                 processSentAction(getResultCode(),id);
                 context.unregisterReceiver(this);
             }
-        }, new IntentFilter(Params.SMS_ACTION_SENT));
+        }, new IntentFilter(Params.SMS_ACTION_SENT),Context.RECEIVER_EXPORTED);
 
 
         context.registerReceiver(new BroadcastReceiver(){
@@ -62,7 +60,7 @@ public class SmsActions {
                 processDeliverAction(getResultCode(),id);
                 context.unregisterReceiver(this);
             }
-        }, new IntentFilter(Params.SMS_ACTION_DELIVERED));
+        }, new IntentFilter(Params.SMS_ACTION_DELIVERED),Context.RECEIVER_EXPORTED);
 
 
         try {
